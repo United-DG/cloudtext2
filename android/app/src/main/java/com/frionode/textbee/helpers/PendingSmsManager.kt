@@ -10,22 +10,26 @@ import java.util.concurrent.TimeUnit
 /**
  * Schedules and manages periodic polling for pending SMS messages.
  *
- * The poller runs on a configurable interval (minimum 5 minutes) and requires
- * network connectivity. It is the reliable, FCM-independent path for delivering
- * outbound SMS queued on the backend.
+ * The poller runs on a dedicated short interval (minimum 2 minutes) independent
+ * of the heartbeat, so queued outbound SMS are picked up promptly even when the
+ * app is already running. Requires network connectivity.
  */
 object PendingSmsManager {
     private const val TAG = "PendingSmsManager"
-    private const val MIN_INTERVAL_MINUTES = 5
+    private const val MIN_INTERVAL_MINUTES = 2
+    private const val DEFAULT_INTERVAL_MINUTES = 5
     private const val UNIQUE_WORK_NAME = "pending_sms_poll_unique_work"
 
     @JvmStatic
     fun schedulePendingSmsPoll(context: Context) {
         val appContext = context.applicationContext
 
-        // Reuse the heartbeat interval preference but enforce a minimum
+        // Use a dedicated short interval for pending SMS polling, independent
+        // of the heartbeat interval. WorkManager enforces a 15-minute minimum
+        // for periodic work on most devices, so we also rely on triggerPendingSmsPoll()
+        // from onResume and after send for more frequent checks.
         var intervalMinutes = SharedPreferenceHelper.getSharedPreferenceInt(
-            appContext, AppConstants.SHARED_PREFS_HEARTBEAT_INTERVAL_MINUTES_KEY, 30
+            appContext, AppConstants.SHARED_PREFS_PENDING_SMS_POLL_INTERVAL_MINUTES_KEY, DEFAULT_INTERVAL_MINUTES
         )
         if (intervalMinutes < MIN_INTERVAL_MINUTES) {
             Log.w(TAG, "Interval $intervalMinutes minutes is less than minimum $MIN_INTERVAL_MINUTES minutes, using minimum")

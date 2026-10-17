@@ -12,10 +12,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.frionode.textbee.helpers.PendingSmsManager
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -26,11 +28,15 @@ fun ComposeScreen(
     val state by viewModel.state.collectAsState()
     var recipientInput by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(state.sendSuccess) {
         if (state.sendSuccess) {
             snackbarHostState.showSnackbar("Message sent successfully!")
             viewModel.clearSuccess()
+            // Poll for pending SMS after a successful send so any other queued
+            // messages are picked up immediately.
+            PendingSmsManager.triggerPendingSmsPoll(context)
         }
     }
 

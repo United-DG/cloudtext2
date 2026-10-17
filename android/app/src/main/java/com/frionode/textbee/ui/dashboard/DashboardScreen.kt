@@ -40,6 +40,7 @@ import com.frionode.textbee.R
 import com.frionode.textbee.dtos.SimInfoDTO
 import com.frionode.textbee.dtos.SubscriptionResponse
 import com.frionode.textbee.dtos.UserProfile
+import com.frionode.textbee.helpers.PendingSmsManager
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -63,6 +64,13 @@ fun DashboardScreen(
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
             viewModel.consumeUserMessage()
         }
+    }
+
+    // Poll for pending outbound SMS whenever this screen becomes visible,
+    // so messages submitted via API/dashboard while the app is open get
+    // picked up without requiring a full app restart.
+    LaunchedEffect(Unit) {
+        PendingSmsManager.triggerPendingSmsPoll(context)
     }
 
     fun checkMissingPermissions() = REQUIRED_PERMISSIONS.filter {

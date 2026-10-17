@@ -29,4 +29,5 @@ public class AppConstants {
     public static final String SHARED_PREFS_USE_NEW_UI_KEY = "USE_NEW_UI";
     public static final String SHARED_PREFS_LAST_HEARTBEAT_MS_KEY = "LAST_HEARTBEAT_MS";
     public static final String PENDING_SMS_POLL_TAG = "pending_sms_poll";
+    public static final String SHARED_PREFS_PENDING_SMS_POLL_INTERVAL_MINUTES_KEY = "PENDING_SMS_POLL_INTERVAL_MINUTES";
 }

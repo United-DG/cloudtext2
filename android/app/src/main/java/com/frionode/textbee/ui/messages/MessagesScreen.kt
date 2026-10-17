@@ -16,11 +16,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.frionode.textbee.dtos.SmsMessage
+import com.frionode.textbee.helpers.PendingSmsManager
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -33,6 +35,14 @@ fun MessagesScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var selectedMessage by remember { mutableStateOf<SmsMessage?>(null) }
+    val context = LocalContext.current
+
+    // Poll for pending outbound SMS whenever this screen becomes visible,
+    // so messages submitted via API/dashboard while the app is open get
+    // picked up without requiring a full app restart.
+    LaunchedEffect(Unit) {
+        PendingSmsManager.triggerPendingSmsPoll(context)
+    }
 
     Scaffold(
         topBar = {

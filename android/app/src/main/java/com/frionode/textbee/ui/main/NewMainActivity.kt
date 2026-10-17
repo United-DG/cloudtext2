@@ -90,6 +90,14 @@ class NewMainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        // Poll for pending outbound SMS whenever the app comes to the foreground,
+        // so messages submitted via API/dashboard while the app was open get
+        // picked up without requiring a full app restart.
+        PendingSmsManager.triggerPendingSmsPoll(this)
+    }
 }
 
 @Composable
