@@ -619,59 +619,17 @@ export class GatewayService {
       }
     }
 
-    try {
-      const response = await firebaseAdmin.messaging().sendEach(fcmMessages)
+    // FCM push removed. SMS records were created above with status 'pending'.
+    // The Android app polls GET /gateway/devices/{deviceId}/messages to fetch
+    // pending outbound SMS and delivers them via the device's own SIM card.
+    // Delivery status is reported back by the app via PATCH /sms-status.
+    // The API returns immediately — no blocking wait on Firebase push.
 
-      console.log(response)
-
-      if (response.successCount === 0) {
-        throw new HttpException(
-          {
-            success: false,
-            error: 'Failed to send SMS',
-            additionalInfo: response,
-          },
-          HttpStatus.BAD_REQUEST,
-        )
-      }
-
-      this.deviceModel
-        .findByIdAndUpdate(deviceId, {
-          $inc: { sentSMSCount: response.successCount },
-        })
-        .exec()
-        .catch((e) => {
-          console.log('Failed to update sentSMSCount')
-          console.log(e)
-        })
-
-      this.smsBatchModel
-        .findByIdAndUpdate(smsBatch._id, {
-          $set: { status: 'completed' },
-        })
-        .exec()
-        .catch((e) => {
-          console.error('failed to update sms batch status to completed')
-        })
-
-      return response
-    } catch (e) {
-      this.smsBatchModel
-        .findByIdAndUpdate(smsBatch._id, {
-          $set: { status: 'failed', error: e.message },
-        })
-        .exec()
-        .catch((e) => {
-          console.error('failed to update sms batch status to failed')
-        })
-      throw new HttpException(
-        {
-          success: false,
-          error: 'Failed to send SMS',
-          additionalInfo: e,
-        },
-        HttpStatus.BAD_REQUEST,
-      )
+    return {
+      success: true,
+      message: 'SMS queued for delivery',
+      smsBatchId: smsBatch._id,
+      recipientCount: recipients.length,
     }
   }
 

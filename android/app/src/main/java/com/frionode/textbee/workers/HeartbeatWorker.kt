@@ -6,6 +6,7 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.frionode.textbee.AppConstants
 import com.frionode.textbee.helpers.HeartbeatHelper
+import com.frionode.textbee.helpers.PendingSmsManager
 import com.frionode.textbee.helpers.SharedPreferenceHelper
 
 class HeartbeatWorker(context: Context, workerParams: WorkerParameters) : Worker(context, workerParams) {
@@ -29,9 +30,11 @@ class HeartbeatWorker(context: Context, workerParams: WorkerParameters) : Worker
         ) ?: ""
 
         return if (HeartbeatHelper.sendHeartbeat(context, deviceId, apiKey)) {
+            PendingSmsManager.triggerPendingSmsPoll(context)
             Result.success()
         } else {
-            Log.e(TAG, "Failed to send heartbeat, will retry")
+            Log.e(TAG, "Heartbeat failed, but still triggering pending SMS poll")
+            PendingSmsManager.triggerPendingSmsPoll(context)
             Result.retry()
         }
     }

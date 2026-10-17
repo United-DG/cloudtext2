@@ -71,11 +71,16 @@ class SMSStatusUpdateWorker(context: Context, workerParams: WorkerParameters) : 
                 Log.d(TAG, "SMS status updated successfully - ID: ${smsDTO.smsId}, Status: ${smsDTO.status}")
                 Result.success()
             } else {
-                Log.e(TAG, "Failed to update SMS status. Response code: ${response.code()}")
+                Log.e(
+                    TAG,
+                    "Failed to update SMS status. ID: ${smsDTO.smsId}, " +
+                        "Status: ${smsDTO.status}, Response code: ${response.code()}, " +
+                        "Body: ${response.errorBody()?.string()}"
+                )
                 Result.retry()
             }
         } catch (e: IOException) {
-            Log.e(TAG, "API call failed: ${e.message}")
+            Log.e(TAG, "API call failed for SMS ${smsDTO.smsId}: ${e.message}", e)
             Result.retry()
         }
     }

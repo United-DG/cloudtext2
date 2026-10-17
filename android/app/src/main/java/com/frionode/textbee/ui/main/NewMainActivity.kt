@@ -24,6 +24,7 @@ import androidx.navigation.compose.rememberNavController
 import com.frionode.textbee.AppConstants
 import com.frionode.textbee.activities.MainActivity
 import com.frionode.textbee.helpers.HeartbeatManager
+import com.frionode.textbee.helpers.PendingSmsManager
 import com.frionode.textbee.helpers.SharedPreferenceHelper
 import com.frionode.textbee.ui.dashboard.DashboardScreen
 import com.frionode.textbee.ui.messages.ComposeScreen
@@ -43,6 +44,16 @@ class NewMainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Poll for pending outbound SMS on app start so queued messages are
+        // picked up even if a heartbeat hasn't run yet (e.g. after a fresh
+        // install or when FCM push is unavailable).
+        PendingSmsManager.triggerPendingSmsPoll(this)
+
+        // Keep a periodic pending-SMS poll scheduled so the phone regularly
+        // checks the backend for queued messages, independent of heartbeat.
+        PendingSmsManager.schedulePendingSmsPoll(this)
+
         setContent {
             TextbeeTheme {
                 val navController = rememberNavController()

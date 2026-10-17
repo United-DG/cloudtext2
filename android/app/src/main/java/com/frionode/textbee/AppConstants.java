@@ -28,4 +28,5 @@ public class AppConstants {
     public static final int DEFAULT_SMS_SEND_DELAY_SECONDS = 5;
     public static final String SHARED_PREFS_USE_NEW_UI_KEY = "USE_NEW_UI";
     public static final String SHARED_PREFS_LAST_HEARTBEAT_MS_KEY = "LAST_HEARTBEAT_MS";
+    public static final String PENDING_SMS_POLL_TAG = "pending_sms_poll";
 }

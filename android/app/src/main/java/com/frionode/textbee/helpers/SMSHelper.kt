@@ -99,28 +99,57 @@ object SMSHelper {
         }
     }
 
-    private fun reportPermissionError(context: Context, smsId: String, smsBatchId: String) {
+    fun reportFailure(
+        context: Context,
+        smsId: String,
+        smsBatchId: String,
+        errorCode: String,
+        errorMessage: String
+    ) {
         val smsDTO = SMSDTO().apply {
             this.smsId = smsId
             this.smsBatchId = smsBatchId
             status = "FAILED"
             failedAtInMillis = System.currentTimeMillis()
-            errorCode = "PERMISSION_DENIED"
-            errorMessage = "SMS permission not granted"
+            this.errorCode = errorCode
+            this.errorMessage = errorMessage
         }
         updateSMSStatus(context, smsDTO)
     }
 
-    private fun reportSendingError(context: Context, smsId: String, smsBatchId: String, error: String?) {
+    @JvmStatic
+    fun reportSent(
+        context: Context,
+        smsId: String,
+        smsBatchId: String
+    ) {
         val smsDTO = SMSDTO().apply {
             this.smsId = smsId
             this.smsBatchId = smsBatchId
-            status = "FAILED"
-            failedAtInMillis = System.currentTimeMillis()
-            errorCode = "SENDING_EXCEPTION"
-            errorMessage = error
+            status = "SENT"
+            sentAtInMillis = System.currentTimeMillis()
         }
         updateSMSStatus(context, smsDTO)
+    }
+
+    private fun reportPermissionError(context: Context, smsId: String, smsBatchId: String) {
+        reportFailure(
+            context,
+            smsId,
+            smsBatchId,
+            "PERMISSION_DENIED",
+            "SMS permission not granted"
+        )
+    }
+
+    private fun reportSendingError(context: Context, smsId: String, smsBatchId: String, error: String?) {
+        reportFailure(
+            context,
+            smsId,
+            smsBatchId,
+            "SENDING_EXCEPTION",
+            error ?: "Unknown exception while sending SMS"
+        )
     }
 
     private fun updateSMSStatus(context: Context, smsDTO: SMSDTO) {

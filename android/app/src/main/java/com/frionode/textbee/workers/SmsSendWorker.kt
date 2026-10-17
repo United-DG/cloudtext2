@@ -52,16 +52,59 @@ class SmsSendWorker(context: Context, workerParams: WorkerParameters) : Worker(c
 
         if (phone == null || message == null || smsId == null) {
             Log.e(TAG, "Missing required parameters")
+            if (smsId != null) {
+                SMSHelper.reportFailure(
+                    applicationContext,
+                    smsId,
+                    smsBatchId ?: "",
+                    "INVALID_SEND_PAYLOAD",
+                    "The mobile app received an incomplete SMS send request"
+                )
+            }
             return Result.failure()
         }
 
         val context = applicationContext
         val resolvedSim = resolveSim(context, simSubscriptionId)
 
-        if (resolvedSim != null) {
-            SMSHelper.sendSMSFromSpecificSim(phone, message, resolvedSim, smsId, smsBatchId ?: "", context)
-        } else {
-            SMSHelper.sendSMS(phone, message, smsId, smsBatchId ?: "", context)
+        try {
+            val accepted = if (resolvedSim != null) {
+                Log.d(TAG, "Sending SMS $smsId using SIM subscription $resolvedSim")
+                SMSHelper.sendSMSFromSpecificSim(
+                    phone,
+                    message,
+                    resolvedSim,
+                    smsId,
+                    smsBatchId ?: "",
+                    context
+                )
+            } else {
+                Log.d(TAG, "Sending SMS $smsId using the default SIM")
+                SMSHelper.sendSMS(phone, message, smsId, smsBatchId ?: "", context)
+            }
+
+            if (!accepted) {
+                Log.e(TAG, "SmsManager rejected SMS $smsId before callback")
+                return Result.failure()
+            }
+
+            // SmsManager.sendTextMessage() is asynchronous: it returns immediately
+            // after handing the message to the telephony layer. The actual send
+            // result arrives later via SMSStatusReceiver. We mark the SMS as SENT
+            // now so it never stays "pending" forever if the delivery callback
+            // is lost (doze mode, battery optimization, telephony silence).
+            SMSHelper.reportSent(context, smsId, smsBatchId ?: "")
+
+        } catch (error: Throwable) {
+            Log.e(TAG, "Unexpected SMS send failure for $smsId", error)
+            SMSHelper.reportFailure(
+                context,
+                smsId,
+                smsBatchId ?: "",
+                "WORKER_EXCEPTION",
+                error.message ?: error.javaClass.simpleName
+            )
+            return Result.failure()
         }
 
         val delaySeconds = SharedPreferenceHelper.getSharedPreferenceInt(

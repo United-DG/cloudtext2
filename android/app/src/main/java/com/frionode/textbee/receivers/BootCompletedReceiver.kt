@@ -13,6 +13,7 @@ import com.frionode.textbee.TextbeeUtils
 import com.frionode.textbee.dtos.RegisterDeviceInputDTO
 import com.frionode.textbee.dtos.RegisterDeviceResponseDTO
 import com.frionode.textbee.helpers.HeartbeatManager
+import com.frionode.textbee.helpers.PendingSmsManager
 import com.frionode.textbee.helpers.SharedPreferenceHelper
 import retrofit2.Call
 import retrofit2.Callback
@@ -50,6 +51,9 @@ class BootCompletedReceiver : BroadcastReceiver() {
             if (deviceEnabled) {
                 Log.i(TAG, "Device booted, scheduling heartbeat")
                 HeartbeatManager.scheduleHeartbeat(context)
+
+                Log.i(TAG, "Device booted, scheduling pending SMS poll")
+                PendingSmsManager.schedulePendingSmsPoll(context)
             }
         }
     }
