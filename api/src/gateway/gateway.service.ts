@@ -924,66 +924,18 @@ export class GatewayService {
       }
     }
 
-    // For non-queue path, convert back to simple array
-    const fcmMessages = fcmMessagesWithDelays.map(({ message }) => message)
-    const fcmMessagesBatches = fcmMessages.map((m) => [m])
-    const fcmResponses: BatchResponse[] = []
+    // FCM push removed. SMS records were created above with status 'pending'.
+    // The Android app polls GET /gateway/devices/{deviceId}/messages to fetch
+    // pending outbound SMS and delivers them via the device's own SIM card.
+    // Delivery status is reported back by the app via PATCH /sms-status.
+    // The API returns immediately — no blocking wait on Firebase push.
 
-    for (const batch of fcmMessagesBatches) {
-      try {
-        const response = await firebaseAdmin.messaging().sendEach(batch)
-
-        console.log(response)
-        fcmResponses.push(response)
-
-        this.deviceModel
-          .findByIdAndUpdate(deviceId, {
-            $inc: { sentSMSCount: response.successCount },
-          })
-          .exec()
-          .catch((e) => {
-            console.log('Failed to update sentSMSCount')
-            console.log(e)
-          })
-
-        this.smsBatchModel
-          .findByIdAndUpdate(smsBatch._id, {
-            $set: { status: 'completed' },
-          })
-          .exec()
-          .catch((e) => {
-            console.error('failed to update sms batch status to completed')
-          })
-      } catch (e) {
-        console.log('Failed to send SMS: FCM')
-        console.log(e)
-
-        this.smsBatchModel
-          .findByIdAndUpdate(smsBatch._id, {
-            $set: { status: 'failed', error: e.message },
-          })
-          .exec()
-          .catch((e) => {
-            console.error('failed to update sms batch status to failed')
-          })
-      }
+    return {
+      success: true,
+      message: 'SMS queued for delivery',
+      smsBatchId: smsBatch._id,
+      recipientCount: body.messages.length,
     }
-
-    const successCount = fcmResponses.reduce(
-      (acc, m) => acc + m.successCount,
-      0,
-    )
-    const failureCount = fcmResponses.reduce(
-      (acc, m) => acc + m.failureCount,
-      0,
-    )
-    const response = {
-      success: successCount > 0,
-      successCount,
-      failureCount,
-      fcmResponses,
-    }
-    return response
   }
 
   async receiveSMS(deviceId: string, dto: ReceivedSMSDTO): Promise<any> {
