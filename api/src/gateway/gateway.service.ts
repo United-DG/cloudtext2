@@ -486,12 +486,6 @@ export class GatewayService {
       )
     }
 
-    await this.billingService.canPerformAction(
-      device.user.toString(),
-      'send_sms',
-      recipients.length,
-    )
-
     // TODO: Implement a queue to send the SMS if recipients are too many
 
     let smsBatch: SMSBatch
@@ -659,12 +653,6 @@ export class GatewayService {
         HttpStatus.BAD_REQUEST,
       )
     }
-
-    await this.billingService.canPerformAction(
-      device.user.toString(),
-      'bulk_send_sms',
-      body.messages.map((m) => m.recipients).flat().length,
-    )
 
     // Check if any message has scheduledAt and validate queue is enabled
     const hasScheduledMessages = body.messages.some((m) => m.scheduledAt)
@@ -969,12 +957,6 @@ export class GatewayService {
         HttpStatus.BAD_REQUEST,
       )
     }
-
-    await this.billingService.canPerformAction(
-      device.user.toString(),
-      'receive_sms',
-      1,
-    )
 
     const receivedAt = dto.receivedAtInMillis
       ? new Date(dto.receivedAtInMillis)
