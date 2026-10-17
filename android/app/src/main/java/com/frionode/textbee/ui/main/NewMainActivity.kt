@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -33,6 +34,9 @@ import com.frionode.textbee.ui.onboarding.OnboardingActivity
 import com.frionode.textbee.ui.settings.SMSFilterScreen
 import com.frionode.textbee.ui.settings.SettingsScreen
 import com.frionode.textbee.ui.theme.TextbeeTheme
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 enum class MainDestination(val label: String, val icon: ImageVector) {
     DASHBOARD("Dashboard", Icons.Default.Dashboard),
@@ -42,16 +46,16 @@ enum class MainDestination(val label: String, val icon: ImageVector) {
 
 class NewMainActivity : ComponentActivity() {
 
+    private var pendingSmsPollJob: Job? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Poll for pending outbound SMS on app start so queued messages are
-        // picked up even if a heartbeat hasn't run yet (e.g. after a fresh
-        // install or when FCM push is unavailable).
+        // Poll for pending outbound SMS on app start
         PendingSmsManager.triggerPendingSmsPoll(this)
 
-        // Keep a periodic pending-SMS poll scheduled so the phone regularly
-        // checks the backend for queued messages, independent of heartbeat.
+        // Keep a periodic pending-SMS poll scheduled (WorkManager) for when
+        // the app is backgrounded/closed.
         PendingSmsManager.schedulePendingSmsPoll(this)
 
         setContent {
@@ -93,10 +97,25 @@ class NewMainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Poll for pending outbound SMS whenever the app comes to the foreground,
-        // so messages submitted via API/dashboard while the app was open get
-        // picked up without requiring a full app restart.
+        // Immediate poll when app comes to foreground
         PendingSmsManager.triggerPendingSmsPoll(this)
+
+        // Repeat pending-SMS poll every 30 seconds while the app is in the
+        // foreground, so messages submitted via API/dashboard while the app
+        // is already open get picked up without requiring a restart.
+        pendingSmsPollJob?.cancel()
+        pendingSmsPollJob = lifecycleScope.launch {
+            while (true) {
+                delay(30000)
+                PendingSmsManager.triggerPendingSmsPoll(this@NewMainActivity)
+            }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        pendingSmsPollJob?.cancel()
+        pendingSmsPollJob = null
     }
 }
 
