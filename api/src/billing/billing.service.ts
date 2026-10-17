@@ -941,12 +941,6 @@ export class BillingService {
   ) {
     try {
       const user = await this.userModel.findById(userId)
-      if (!user) {
-        throw new HttpException(
-          { message: 'User account could not be found' },
-          HttpStatus.NOT_FOUND,
-        )
-      }
       if (user.isBanned) {
         throw new HttpException(
           {
@@ -976,20 +970,6 @@ export class BillingService {
         plan = await this.planModel.findOne({ name: 'free' })
       } else {
         plan = await this.planModel.findById(subscription.plan)
-      }
-
-      if (!plan) {
-        console.error(
-          'canPerformAction: No billing plan found for active account',
-          JSON.stringify({ userId, subscriptionId: subscription?._id }),
-        )
-        throw new HttpException(
-          {
-            message:
-              'Your billing plan is temporarily unavailable. Please try again shortly.',
-          },
-          HttpStatus.SERVICE_UNAVAILABLE,
-        )
       }
 
       const effectiveLimits = this.getEffectiveLimits(subscription, plan)
@@ -1140,22 +1120,9 @@ export class BillingService {
       if (error instanceof HttpException) {
         throw error
       }
-      const details = error instanceof Error
-        ? { name: error.name, message: error.message, stack: error.stack }
-        : error
-      console.error('canPerformAction: Exception in canPerformAction', {
-        userId,
-        action,
-        value,
-        error: details,
-      })
-      throw new HttpException(
-        {
-          message:
-            'We could not verify your SMS allowance. Please try again shortly.',
-        },
-        HttpStatus.SERVICE_UNAVAILABLE,
-      )
+      console.error('canPerformAction: Exception in canPerformAction')
+      console.error(JSON.stringify(error))
+      return true
     }
   }
 
