@@ -13,6 +13,7 @@ import com.frionode.textbee.TextbeeUtils
 import com.frionode.textbee.dtos.RegisterDeviceInputDTO
 import com.frionode.textbee.dtos.RegisterDeviceResponseDTO
 import com.frionode.textbee.helpers.HeartbeatManager
+import com.frionode.textbee.helpers.PendingSmsAlarmManager
 import com.frionode.textbee.helpers.PendingSmsManager
 import com.frionode.textbee.helpers.SharedPreferenceHelper
 import retrofit2.Call
@@ -54,6 +55,9 @@ class BootCompletedReceiver : BroadcastReceiver() {
 
                 Log.i(TAG, "Device booted, scheduling pending SMS poll")
                 PendingSmsManager.schedulePendingSmsPoll(context)
+
+                Log.i(TAG, "Device booted, starting background pending SMS alarm")
+                PendingSmsAlarmManager.startBackgroundPolling(context)
             }
         }
     }
